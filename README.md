@@ -1,2 +1,2 @@
-# wine-helms
-Web application taking physicochemical data of a wine to predict it's overall quality.
+# CryptoHelms
+Time series forecasting allows users to visualize cryptocurrency metadata at any given time.
