@@ -22,10 +22,14 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+## Add the following routers to the main.py application entry point.
+
 app.include_router(
     forecast.router,
     tags=["Forecast"],
 )
+
+
 
 if __name__ == '__main__':
     uvicorn.run(app)
