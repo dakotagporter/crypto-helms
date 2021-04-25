@@ -3,6 +3,7 @@ from fastapi import APIRouter
 # Instantiate router
 router = APIRouter()
 
+# Forecast router to generate predictions and return to user.
 @router.get("/forecast")
 async def forecast():
     # Retrieve user's input.
