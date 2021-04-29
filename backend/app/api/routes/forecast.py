@@ -4,7 +4,7 @@ from fastapi import APIRouter
 router = APIRouter()
 
 # Forecast router to generate predictions and return to user.
-@router.get("/forecast")
+@router.get("/")
 async def forecast():
     # Retrieve user's input.
     # Send input to SageMaker endpoint.
