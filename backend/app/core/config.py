@@ -5,10 +5,12 @@ from starlette.datastructures import Secret
 # Config allows to specify a file in which to search for environment variables
 config = Config(".env")
 
+# Project Description
 PROJECT_NAME="CryptoHelms"
 VERSION="v1.0.0-alpha"
 API_PREFIX="/api"
 
+# Secret Key
 SECRET_KEY = config("SECRET_KEY", cast=Secret, default="NEWKEY")
 
 # Database
