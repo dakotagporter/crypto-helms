@@ -13,3 +13,11 @@ services:
             - ./backend/.env
         ports:
             - 8000:8000
+    
+    pgadmin:
+        image: dpage/pgadmin4
+        ports:
+            - 80:80
+        environment:
+            PGADMIN_DEFAULT_EMAIL: dakotap3045@gmail.com
+            PGADMIN_DEFAULT_PASSWORD: root

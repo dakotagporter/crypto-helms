@@ -1,4 +1,3 @@
-from databases import DatabaseURL
 from starlette.config import Config
 from starlette.datastructures import Secret
 
@@ -20,6 +19,7 @@ RDS_PORT = config("RDS_PORT", cast=str, default="5432")
 RDS_DB_NAME = config("RDS_DB_NAME", cast=str)
 RDS_REGION = config("RDS_REGION", cast=str)
 DATABASE_URL = config("DATABASE_URL", cast=str)
+RFC1738_DATABASE_URL = config("RFC1738_DATABASE_URL", cast=str)
 
 # AWS
 AWS_ACCESS_KEY = config("AWS_ACCESS_KEY", cast=str)

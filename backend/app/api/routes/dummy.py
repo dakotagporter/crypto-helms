@@ -17,7 +17,7 @@ router = APIRouter()
 @router.get("/")
 async def dummy_data() -> List[dict]:
     employees = [
-        {"id": 1, "name": "John", "employee_id": 12345},
+        {"id": 1, "name": "John", "employee_id": 12345, "age": 23},
         {"id": 2, "name": "June", "employee_id": 67890}
     ]
 
