@@ -1,5 +1,6 @@
 """Collection of database tasks to be executed throughout application runtime."""
 # Std Library Imports
+import os
 import logging
 
 # Third-party Imports
@@ -13,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 # Connect to database using credentials from core.config
 async def connect_to_db(app: FastAPI) -> None:
+    # Assign testing database when called from conftest
+    DB_URL = f"{config.DATABASE_URL}_test" if os.environ.get("TESTING") else config.DATABASE_URL
+    database = Database(DB_URL)
 
     try:
         # Connect to database
