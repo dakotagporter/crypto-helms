@@ -1,5 +1,6 @@
 """Run when the script.py.mako migration event is invoked."""
 # Std Library Imports
+import os
 import sys
 import pathlib
 import logging
@@ -8,11 +9,12 @@ from logging.config import fileConfig
 # Third-party Imports
 import alembic
 from sqlalchemy import engine_from_config, pool, create_engine
+from psycopg2 import DatabaseError
 
 # Append app directory to current path to easily import config
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[3]))
 
-from app.core import config as cfg
+from app.core.config import DATABASE_URL, RDS_DB_NAME
 
 # Instantiate alembic config object to pull values from .ini file
 config = alembic.context.config
@@ -26,13 +28,24 @@ def run_migrations_online() -> None:
     """
     Run migrations in 'online' mode.
     """
+    DB_URL = f"{DATABASE_URL}_test" if os.environ.get("TESTING") else str(DATABASE_URL)
+    
+    # Handle testing configurations for migrations
+    if os.environ.get("TESTING"):
+        # Connect to primary database
+        default_engine = create_engine(str(DATABASE_URL), isolation_level="AUTOCOMMIT")
+        # Drop testing db if exists and create fresh db
+        with default_engine.connect() as default_conn:
+            default_conn.execute(f"DROP DATABASE IF EXISTS {RDS_DB_NAME}_test")
+            default_conn.execute(f"CREATE DATABASE {RDS_DB_NAME}_test")
+
     connectable = config.attributes.get("connection", None)
-    config.set_main_option("sqlalchemy.url", str(cfg.RFC1738_DATABASE_URL))
+    config.set_main_option("sqlalchemy.url", str(DB_URL))
 
     if connectable is None:
         logger.warn("--- CREATING CONNECTION ---")
         connectable = create_engine(
-            f"postgres://{cfg.RDS_USER}:{cfg.RDS_PASSWORD}@{cfg.DATABASE_URL}:{cfg.RDS_PORT}"
+            f"postgres://{RDS_USER}:{RDS_PASSWORD}@{DATABASE_URL}:{RDS_PORT}"
         )
     
     with connectable.connect() as connection:
@@ -51,7 +64,10 @@ def run_migrations_offline() -> None:
     """
     Run migrations in 'offline' mode.
     """
-    alembic.context.configure(url=str(cfg.RFC1738_DATABASE_URL))
+    if os.environ.get("TESTING"):
+        raise DatabaseError("Running testing migrations offline currently not permitted.")
+
+    alembic.context.configure(url=str(DATABASE_URL))
 
     with alembic.context.begin_transaction():
         alembic.context.run_migrations()

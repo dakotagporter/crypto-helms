@@ -5,18 +5,16 @@ import warnings
 # Third-party Imports
 import pytest
 from asgi_lifespan import LifespanManager
-
 from fastapi import FastAPI
 from httpx import AsyncClient
 from databases import Database
-
 import alembic
 from alembic.config import Config
 
 # Apply db migrations at beginning and end of testing session
 @pytest.fixture(scope="session")
 def apply_migrations():
-    warnings.filterwarnings("ignore", category=DepricationWarning)
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
     os.environ["TESTING"] = "1"
     config = Config("alembic.ini")
 
@@ -31,6 +29,9 @@ def app(apply_migrations: None) -> FastAPI:
     return get_application()
 
 # Grab a reference to our database
+@pytest.fixture
+def db(app: FastAPI) -> Database:
+    return app.state._db
 
 # Make sample requests to the running application
 @pytest.fixture
