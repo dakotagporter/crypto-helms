@@ -33,7 +33,7 @@ class UserCreate(CoreModel):
     """
     email: EmailStr
     password: constr(min_length=7, max_length=100)
-    username: str
+    username: constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")
 
     @validator("username", pre=True)
     def username_is_valid(cls, username=str) -> str:
@@ -45,7 +45,7 @@ class UserUpdate(CoreModel):
     Users are allowed to update their email and/or username.
     """
     email: Optional[EmailStr]
-    username: Optional[str]
+    username: Optional[constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")]
 
     @validator("username", pre=True)
     def username_is_valid(cls, username: str) -> str:
@@ -55,6 +55,14 @@ class UserUpdate(CoreModel):
 class UserPasswordUpdate(CoreModel):
     """
     Users are allowed to change their password.
+    """
+    password: constr(min_length=7, max_length=100)
+    salt: str
+
+
+class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
+    """
+    Add in id, created_at, updated_at, and user's password and salt.
     """
     password: constr(min_length=7, max_length=100)
     salt: str
