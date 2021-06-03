@@ -4,6 +4,7 @@ from fastapi import APIRouter
 from app.api.routes.dummy import router as dummy_router
 from app.api.routes.forecast import router as forecast_router
 from app.api.routes.viz import router as viz_router
+from app.api.routes.users import router as users_router
 
 # Access all routes with this router
 router = APIRouter()
@@ -11,3 +12,4 @@ router = APIRouter()
 # Include all routes
 router.include_router(dummy_router, prefix="/dummy", tags=["dummy"])
 router.include_router(forecast_router, prefix="/forecast", tags=["forecast"])
+router.include_router(users_router, prefix="/users", tags=["users"])
