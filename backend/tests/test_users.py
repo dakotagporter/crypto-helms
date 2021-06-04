@@ -36,4 +36,49 @@ class TestUserRegistration:
         client: AsyncClient,
         db: Database
     ) -> None:
-        user_repo
+        user_repo = UsersRepository(db)
+        new_user = {"email": "crsr@gmail.com", "username": "CRSR", "password": "pass-word"}
+
+        # Ensure that user does NOT yet exist
+        user_in_db = await user_repo.get_user_by_email(email=new_user["email"])
+        assert user_in_db is None
+
+        # Send POST request to create a new user and ensure status
+        res = await client.post(app.url_path_for("user:register-new-user"), json={"new_user": new_user})
+        assert res.status_code == HTTP_201_CREATED
+
+        # Ensure that new user exists in db
+        user_in_db = await user_repo.get_user_by_email(email=new_user["email"])
+        assert user_in_db is not None
+        assert user_in_db.email = new_user["email"]
+        assert user_in_db.username = new_user["username"]
+
+        # Check that user returned in response is the same as the one in the db
+        created_user = UserInDB(**res.json(), password="whatever", salt="1234").dict(exclude={"password", "salt"})
+        assert created_user == user_in_db.dict(exclude={"password", "salt"})
+    
+    @pytest.mark.parametrize(
+        "attr, value, status_code",
+        (
+            ("email", "crsr@gmail.com", 400),
+            ("username", "CRSR", 400),
+            ("email", "invalid@email@email.com", 422),
+            ("password", "short", 422),
+            ("username", "crsr47@$$xx", 422),
+            ("username", "ab", 422)
+        )
+    )
+    async def test_user_registration_fails_when_credentials_are_taken(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        db: Database,
+        attr: str,
+        value: str,
+        status_code: int
+    ) -> None:
+        new_user = {"email": "nottaken@gmail.com", "username": "username_not_taken", "password": "anypassword"}
+        new_user[attr] = value
+
+        res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
+        assert res.status_code = status_code
