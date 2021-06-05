@@ -1,9 +1,21 @@
+"""
+Configures all environment variables from the .env file. Using starlette, this process
+is decentralized (to prevent a chain of errors if missing an .env file) and easily
+and securely accesses all necessary variables from the .env file. This file is
+referenced all across the application.
+
+*Default values can be given for certain variables and each variable must specify a type cast.
+"""
+# Std Library Imports
+
+# Third Party Imports
 from databases import DatabaseURL
 from starlette.config import Config
 from starlette.datastructures import Secret
 
-# Config allows to specify a file in which to search for environment variables
+# Config allows you to specify a file in which to search for environment variables
 config = Config(".env")
+
 
 # Project Description
 PROJECT_NAME="CryptoHelms"

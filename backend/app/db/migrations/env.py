@@ -1,4 +1,37 @@
-"""Run when the script.py.mako migration event is invoked."""
+"""Source file run when a migration event (from the CLI) is invoked.
+
+Alembic is used to run migrations. It's used here because it's lightweight and
+works well with SQLAlchemy (which we use to communicate with out database) and
+happens to be written by the same author.
+
+Migrations are ways to change the schema of a database (add a column or table or
+make updates to current schema). They're usually written as SQL transactions
+(all changes run at once to ensure either a SUCCESS or FAILURE) and can therefore
+be rolled back in case the changes were not correct.
+
+The alembic environment is first configured from the alembic.ini file and the
+script.py.mako will be used as a template for single migrations.
+
+run_migrations_online():
+    - Invoked when migration is run from CLI
+    - Connects to either current or testing database and will run current migrations
+
+run_migrations_offline():
+    - Will run ONLY testing migrations while offline
+
+RUNNING MIGRATIONS:
+> docker ps
+> docker exec -it <server_container_id> bash
+> alembic revision -m "<migration_description>"
+
+    - Define any additional functions (or add code to upgrade() and downgrade())
+      in the new file generated in app.db.migrations.versions
+
+> alembic upgrade head
+
+    - Use the pgadmin docker service (port 80) to ensure that migrations
+      were successful
+"""
 # Std Library Imports
 import os
 import sys
@@ -6,9 +39,9 @@ import pathlib
 import logging
 from logging.config import fileConfig
 
-# Third-party Imports
+# Third Party Imports
 import alembic
-from sqlalchemy import engine_from_config, pool, create_engine
+from sqlalchemy import create_engine
 from psycopg2 import DatabaseError
 
 # Append app directory to current path to easily import config

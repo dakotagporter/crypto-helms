@@ -1,3 +1,12 @@
+"""
+Aggregation of all application routes into a single router. All created routers are imported here and
+added to a single router for access from the app.api.server file.
+
+router:
+    - Initial instantiation of a router
+    - All routers are aggregated to this router
+    - All routers are given a name (to appear in the URL) and a tag (for documentation)
+"""
 from fastapi import APIRouter
 
 # Import routes

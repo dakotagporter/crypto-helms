@@ -1,3 +1,20 @@
+"""
+Users repository dealing with database actions on users. It inherits the
+database connection from BaseRepository.
+
+get_user_by_email(), get_user_by_username():
+    - Takes an object (provided as a kwarg) and attempts to retrieve the user
+      (and all it's attributes) from the database.
+    - If a user is found, all of their attributes are unpacked as keyword
+      arguments and are used to create a UserInDB object.
+
+register_new_user():
+    - A UserCreate object MUST be passed
+    - Ensure credentials are not already taken or existant
+    - Run the query to create a new user by unpacking all of the UserCreate's
+      attributes as the values to be inserted with the SQL query
+    - Return the UserInDB object
+"""
 # Std Library Imports
 
 # Third Party Imports

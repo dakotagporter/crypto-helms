@@ -1,8 +1,41 @@
+"""
+User model that deals with all aspects of application users.
+
+UserBase:
+    - Contains shared information among all users
+
+UserCreate:
+    - Contains all attributes required to create a new user
+    - Used in POST requests
+    - Uses a function to verify a syntatically correct username
+
+UserUpdate:
+    - Attributes that can be updated (email and username can
+      be update in our app)
+    - Used in PUT requests
+    - Uses a function to verify a syntatically correct username
+
+UserInDB:
+    - Attributes present on a user in the database (password and salt)
+    - Contains all the attributes from:
+        - UserBase
+        - DateTimeModelMixin
+        - IDModelMixin
+
+UserPublic:
+    - Attributes present on public-facing resources being returned from
+      GET, PUT or POST requests
+    - Only contains attributes from:
+        - UserBase
+        - DateTimeModelMixin
+        - IDModelMixin
+    - Does NOT include password and salt
+"""
 # Std Library Imports
 import string
 from typing import Optional
 
-# Third-Party Imports
+# Third Party Imports
 from pydantic import EmailStr, constr, validator
 
 from app.models.core import DateTimeModelMixin, IDModelMixin, CoreModel
@@ -18,19 +51,18 @@ def validate_username(username: str) -> str:
 
 class UserBase(CoreModel):
     """
-    Leaving off password and salt from base model.
+    Class containing all the shared characteristics
+    of any user (email, username, etc.).
     """
     email: Optional[EmailStr]
     user: Optional[str]
     email_verified: bool = False
     is_active: bool = True
     is_superuser: bool = False
+    # Leave out password and salt for security
 
 
 class UserCreate(CoreModel):
-    """
-    Email, username, and password are required for registering a new user.
-    """
     email: EmailStr
     password: constr(min_length=7, max_length=100)
     username: constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")
@@ -41,9 +73,6 @@ class UserCreate(CoreModel):
 
 
 class UserUpdate(CoreModel):
-    """
-    Users are allowed to update their email and/or username.
-    """
     email: Optional[EmailStr]
     username: Optional[constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")]
 
@@ -53,17 +82,11 @@ class UserUpdate(CoreModel):
 
 
 class UserPasswordUpdate(CoreModel):
-    """
-    Users are allowed to change their password.
-    """
     password: constr(min_length=7, max_length=100)
     salt: str
 
 
 class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
-    """
-    Add in id, created_at, updated_at, and user's password and salt.
-    """
     password: constr(min_length=7, max_length=100)
     salt: str
 

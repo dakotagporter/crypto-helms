@@ -1,8 +1,19 @@
-"""Executes all core tasks required to function the application."""
+"""Executes all core tasks required to function the application.
+
+create_start_app_handler():
+    - Used in startup event handler in app.api.server
+    - Connects to our database
+    - Returns function to be executed on startup
+
+create_stop_app_handler():
+    - Used in shutdown event handler in app.api.server
+    - Closes the database connection
+    - Returns function to be executed on shutdown
+"""
 # Std Library Imports
 from typing import Callable
 
-# Third-party Imports
+# Third Party Imports
 from fastapi import FastAPI
 
 from app.db.tasks import connect_to_db, close_db_connection

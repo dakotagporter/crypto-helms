@@ -1,9 +1,23 @@
-"""Collection of database tasks to be executed throughout application runtime."""
+"""Collection of database tasks to be executed throughout application runtime.
+
+logger:
+    - Creates a logger for database status throughout application runtime
+    
+connect_to_db():
+    - Retrieves AWS database credentials from app.core.config
+    - Connects to database and attach the connection (as _db) to the app's state object (for constant connection)
+    - Raise error in logger if connection fails
+
+close_db_connection():
+    - app.state._db is an established db connection and can
+      be closed using databases .diconnect() method
+    - Raise error in logger if disconnect fails
+"""
 # Std Library Imports
 import os
 import logging
 
-# Third-party Imports
+# Third Party Imports
 from databases import Database
 from fastapi import FastAPI
 import boto3

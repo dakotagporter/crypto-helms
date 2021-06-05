@@ -1,3 +1,17 @@
+# Docker-compose is used to manage multi-container applications.
+# We use it here because we have our Python image as well as two
+# additional services (as defined below).
+# Server:
+#   - Our server service builds the server (with uvicorn) for app access in your browser based on the Dockerfile
+#   - All backend files are saved to 'volumes' so that the application status will maintain state when the container is killed
+#   - The 'app' variable is called in app.api.server and is used as the source of the application
+#   - Port 8000 is used to display the current status of the application and then .env file will be used for additional variables
+#
+# PGAdmin:
+#   - Our pgadmin service defines the tools need to access our database (hosted in AWS RDS)
+#   - Using PostgreSQL makes choosing PGAdmin fairly simple
+#   - Port 80 is used for the database interface
+
 version: '3.7'
 
 services:
