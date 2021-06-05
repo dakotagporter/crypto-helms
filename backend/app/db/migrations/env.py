@@ -15,6 +15,7 @@ script.py.mako will be used as a template for single migrations.
 run_migrations_online():
     - Invoked when migration is run from CLI
     - Connects to either current or testing database and will run current migrations
+    - TESTING: Creates a fresh testing database from the URL we know to be valid
 
 run_migrations_offline():
     - Will run ONLY testing migrations while offline

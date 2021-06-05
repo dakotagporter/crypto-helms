@@ -5,7 +5,7 @@ to ensure that data flowing throughout the application is what it's supposed to 
 
 The typing library allows us to use Python type hints to help with the data
 validation process within FastAPI and Pydantic.
-    - Optional[...]: The argument MUST be ... or None.
+    - Optional[...]: The argument MUST be a ...-type or None.
     - List[...], Tuple[...], etc.
 
 CoreModel:

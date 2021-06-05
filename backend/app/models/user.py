@@ -7,13 +7,17 @@ UserBase:
 UserCreate:
     - Contains all attributes required to create a new user
     - Used in POST requests
-    - Uses a function to verify a syntatically correct username
+    - Uses regex to verify a syntatically correct username
 
 UserUpdate:
     - Attributes that can be updated (email and username can
       be update in our app)
     - Used in PUT requests
-    - Uses a function to verify a syntatically correct username
+    - Uses regex to verify a syntatically correct username
+
+UserPasswordUpdate:
+    - Password can be updated by user, always ensuring it is a string
+      between 7 and 100 characters
 
 UserInDB:
     - Attributes present on a user in the database (password and salt)
@@ -32,21 +36,12 @@ UserPublic:
     - Does NOT include password and salt
 """
 # Std Library Imports
-import string
 from typing import Optional
 
 # Third Party Imports
-from pydantic import EmailStr, constr, validator
+from pydantic import EmailStr, constr
 
 from app.models.core import DateTimeModelMixin, IDModelMixin, CoreModel
-
-
-# Simple check for valid username
-def validate_username(username: str) -> str:
-    allowed = string.ascii_letters + string.digits + "-" + "_"
-    assert all(char in allowed for char in username), "Invalid characters in username."
-    assert len(username) >= 3, "Username must be 3 characters or more."
-    return username
 
 
 class UserBase(CoreModel):
@@ -67,18 +62,10 @@ class UserCreate(CoreModel):
     password: constr(min_length=7, max_length=100)
     username: constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")
 
-    @validator("username", pre=True)
-    def username_is_valid(cls, username=str) -> str:
-        return validate_username(username)
-
 
 class UserUpdate(CoreModel):
     email: Optional[EmailStr]
     username: Optional[constr(min_length=3, regex="^[a-zA-Z0-9_-]+$")]
-
-    @validator("username", pre=True)
-    def username_is_valid(cls, username: str) -> str:
-        return validate_username(username)
 
 
 class UserPasswordUpdate(CoreModel):

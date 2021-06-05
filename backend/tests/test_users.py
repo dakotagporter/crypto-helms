@@ -1,6 +1,25 @@
+"""
+Testing of user route.
+
+test_routes_exist():
+    - Creates a fake new user
+    - Waits for a response when pinging the register-new-user route
+
+test_users_can_register_successfully():
+    - Sets a new database connection when accessing the users repository
+    - Creates a fake new user
+    - Query database to ensure user does not exist
+    - Send POST request to register new user
+    - Query for user again to ensure successful creation
+
+test_user_registration_fails_when_credentials_are_taken():
+    - Parametrize decorator allows test function to be called multiple
+      times (to test all bad error codes) by writing over the default
+      values provided in the fake new user
+"""
 # Std Library Imports
 
-# Third-party Imports
+# Third Party Imports
 import pytest
 from httpx import AsyncClient
 from fastapi import FastAPI

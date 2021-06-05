@@ -7,6 +7,7 @@ connect_to_db():
     - Retrieves AWS database credentials from app.core.config
     - Connects to database and attach the connection (as _db) to the app's state object (for constant connection)
     - Raise error in logger if connection fails
+    - TESTING: If the testing env variable is 1, create a testing database in the db.migrations.env file
 
 close_db_connection():
     - app.state._db is an established db connection and can

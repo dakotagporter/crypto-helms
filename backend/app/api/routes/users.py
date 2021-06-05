@@ -3,7 +3,7 @@ User route handling user functionality.
 
 register_new_user():
     - TL;DR -> FastAPI reads and validates the data in the request and
-      creates a UserCreate model required by the register_new_user function
+      sends it over to the UsersRepository to return the created user
       
     - By specifying UserCreate, FastAPI reads the body of the request as
       JSON and converts the types according to the Pydantic model, validates
@@ -12,7 +12,7 @@ register_new_user():
       so that we can register a new user
     - Since we specified UserPublic as the return object, FastAPI automatically
       converts the UserInDB (returned from register_new_user) to a UserPublic object
-    - The response is also appropriately converted 
+    - The return value is also converted to the appropriate JSON response object.
 
 """
 # Std Library Imports

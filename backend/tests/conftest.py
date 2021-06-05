@@ -1,8 +1,25 @@
+"""
+Hub for all fixtures used in the testing suite. Fixtures are created to run their functions
+when a testing function requests it to be run.
+
+apply_migrations():
+    - Accesses the alembic.ini file to configure a migration environment
+    - Runs the head migration, then downgrades
+
+app():
+    - Instantiates a new application
+
+db():
+    - Returns a database connection
+
+client():
+    - Creates a test client for testing requests
+"""
 # Std Library Imports
 import os
 import warnings
 
-# Third-party Imports
+# Third Party Imports
 import pytest
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
