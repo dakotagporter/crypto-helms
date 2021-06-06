@@ -1,6 +1,7 @@
 """
 Users repository dealing with database actions on users. It inherits the
-database connection from BaseRepository.
+database connection from BaseRepository. Ensure that anytime the class is
+called, the constructor gives the parent class the database connection.
 
 get_user_by_email(), get_user_by_username():
     - Takes an object (provided as a kwarg) and attempts to retrieve the user
@@ -11,6 +12,8 @@ get_user_by_email(), get_user_by_username():
 register_new_user():
     - A UserCreate object MUST be passed
     - Ensure credentials are not already taken or existant
+    - Generate a salt and hash of the users password
+    - Update the param for the user by copying to a new user
     - Run the query to create a new user by unpacking all of the UserCreate's
       attributes as the values to be inserted with the SQL query
     - Return the UserInDB object
@@ -19,9 +22,11 @@ register_new_user():
 
 # Third Party Imports
 from pydantic import EmailStr
+from databases import Database
 from fastapi import HTTPException, status
 
 from app.db.repositories.base import BaseRepository
+from app.services import auth_service
 from app.models.user import UserCreate, UserUpdate, UserInDB, UserPublic
 
 
@@ -45,6 +50,10 @@ REGISTER_NEW_USER = """
 
 
 class UsersRepository(BaseRepository):
+    def __init__(self, db: Database) -> None:
+        super().__init__(db)
+        self.auth_service = auth_service
+
     async def get_user_by_email(self, *, email: EmailStr) -> UserInDB:
         user_record = await self.db.fetch_one(query=GET_USER_BY_EMAIL, values={"email": email})
 
@@ -76,6 +85,8 @@ class UsersRepository(BaseRepository):
                 detail="Username is already taken. Please try a different one."
             )
         
-        created_user = await self.db.fetch_one(query=REGISTER_NEW_USER, values={**new_user.dict(), "salt": "123"})
+        user_password_update = self.auth_service.create_salt_and_hashed_password(plaintext_password=new_user.password)
+        new_user_params = new_user.copy(update=user_password_update.dict())
+        created_user = await self.db.fetch_one(query=REGISTER_NEW_USER, values={new_user_params.dict()})
 
         return UserInDB(**created_user)

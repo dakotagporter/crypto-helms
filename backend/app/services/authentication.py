@@ -11,14 +11,28 @@ generate_salt():
 
 hash_password():
     - Creates a hash of the combination of the users generated hash and plaintext password
+
+verify_password():
+    - Use CryptContexts verify function to verify that a users password is hashed
+
+create_access_token_for_user():
+    - Takes a user from the db and creates the meta and creds for
+      the user with out JWTMeta and JWTCreds classes
+    - All of those attributes are dumped into a JWTPayload object
+    - The payload is the encoded with our algorithm and secret key
 """
 # Std Library Imports
+from datetime import datetime, timedelta
 
 # Third Party Imports
+import jwt
 import bcrypt
 from passlib.context import CryptContext
 
 from app.models.user import UserPasswordUpdate
+from app.core.config import SECRET_KEY, JWT_AUDIENCE, JWT_ALGORITHM, JWT_TOKEN_PREFIX, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models.token import JWTMeta, JWTCreds, JWTPayload
+from app.models.user import UserPasswordUpdate, UserInDB
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -43,3 +57,32 @@ class AuthService:
     
     def hash_password(self, *, password: str, salt: str) -> str:
         return pwd_context.hash(password + salt)
+    
+    def verify_password(self, *, password: str, salt: str, hashed_pw: str) -> bool:
+        return pwd_context.verify(password + salt, hashed_pw)
+    
+    def create_access_token_for_user(
+        self,
+        *,
+        user: UserInDB,
+        secret_key: str = str(SECRET_KEY),
+        audience: str = str(JWT_AUDIENCE),
+        expires_in: int = int(ACCESS_TOKEN_EXPIRE_MINUTES)
+    ) -> str:
+        if not user or not isinstance(user, UserInDB):
+            return None
+        
+        jwt_meta = JWTMeta(
+            aud=audience,
+            iat=datetime.timestamp(datetime.utcnow()),
+            exp=datetime.timestamp(datetime.utcnow() + timedelta(minutes=expires_in))
+        )
+        jwt_creds = JWTCreds(sub=user.email, username=user.username)
+        token_payload = JWTPayload(
+            **jwt_meta.dict(),
+            **jwt_creds.dict()
+        )
+
+        access_token = jwt.encode(token_payload.dict(), secret_key, algorithm=JWT_ALGORITHM)
+
+        return access_token

@@ -22,8 +22,16 @@ PROJECT_NAME="CryptoHelms"
 VERSION="v1.0.0-alpha"
 API_PREFIX="/api"
 
-# Secret Key
-SECRET_KEY = config("SECRET_KEY", cast=Secret, default="NEWKEY")
+# Auth
+SECRET_KEY = config("SECRET_KEY", cast=Secret)
+JWT_ALGORITHM = config("JWT_ALGORITHM", cast=str, defualt="HS256")
+JWT_AUDIENCE = config("JWT_AUDIENCE", cast=str, default="cryptohelms:auth")
+JWT_TOKEN_PREFIX = config("JWT_TOKEN_PREFIX", cast=str, default="Bearer")
+ACCESS_TOKEN_EXPIRE_MINUTES = config(
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    cast=int,
+    default=7 * 24 * 60 # one week
+)
 
 # Database
 RDS_USER = config("RDS_USER", cast=str)

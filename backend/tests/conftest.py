@@ -14,6 +14,9 @@ db():
 
 client():
     - Creates a test client for testing requests
+
+test_user():
+    - Tests user existence
 """
 # Std Library Imports
 import os
@@ -27,6 +30,10 @@ from httpx import AsyncClient
 from databases import Database
 import alembic
 from alembic.config import Config
+
+from app.models.user import UserCreate, UserInDB
+from app.db.repositories.users import UsersRepository
+
 
 # Apply db migrations at beginning and end of testing session
 @pytest.fixture(scope="session")
@@ -60,3 +67,20 @@ async def client(app: FastAPI) -> AsyncClient:
             headers={"Content-Type": "application/json"}
         ) as client:
             yield client
+
+# Test user existence
+@pytest.fixture
+async def test_user(db: Database) -> UserInDB:
+    new_user = UserCreate(
+        email="someonesemail@secret.com",
+        username="someone",
+        password="someonespassword"
+    )
+
+    user_repo = UsersRepository(db)
+
+    existing_user = await user_repo.get_user_by_email(email=new_user.email)
+    if existing_user:
+        return existing_user
+    
+    return await user_repo.register_new_user(new_user=new_user)

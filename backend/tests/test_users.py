@@ -16,14 +16,37 @@ test_user_registration_fails_when_credentials_are_taken():
     - Parametrize decorator allows test function to be called multiple
       times (to test all bad error codes) by writing over the default
       values provided in the fake new user
+
+test_users_saved_password_is_hashed_and_has_salt():
+    - Create a fake user by sending a POST request to the client
+    - Ensure the user exists
+    - Ensure the password is not the same as sent in the POST request
+    - Ensure the password is hashed with the verify_password function
+      from our auth service
+
+test_can_create_access_token_successfully():
+    - Ensure our auth service can properly create an access token using
+      our create_access_token_for_user function from our auth service
+    - Decode the token and ensure the credentials of the user and token match
+
+test_token_missing_user_is_invalid():
+    - Ensure that nothing is in the payload if a user is missing
+
+test_invalid_token_content_raises_error():
+    - Ensure that various other incorrect token contents raise the
+      correct errors
 """
 # Std Library Imports
+from typing import List, Union, Type, Optional
 
 # Third Party Imports
+import jwt
 import pytest
 from httpx import AsyncClient
 from fastapi import FastAPI
 from databases import Database
+from pydantic import ValidationError
+from starlette.datastructures import Secret
 
 from starlette.status import (
     HTTP_200_OK,
@@ -34,11 +57,70 @@ from starlette.status import (
     HTTP_422_UNPROCESSABLE_ENTITY
 )
 
-from app.models.user import UserCreate, UserInDB
+from app.models.user import UserCreate, UserInDB, UserPublic
 from app.db.repositories.users import UsersRepository
+from app.services import auth_service
+from app.core.config import SECRET_KEY, JWT_ALGORITHM, JWT_AUDIENCE, JWT_TOKEN_PREFIX, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models.token import JWTMeta, JWTCreds, JWTPayload
 
 
 pytestmark = pytest.mark.asyncio
+
+
+class TestAuthTokens:
+    async def test_can_create_access_token_successfully(
+        self, app: FastAPI, client: AsyncClient, test_user: UserInDB
+    ) -> None:
+        access_token = auth_service.create_access_token_for_user(
+            user=test_user,
+            secret_key=str(SECRET_KEY),
+            audience=JWT_AUDIENCE,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
+        creds = jwt.decode(access_token, str(SECRET_KEY), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
+        assert creds.get("username") is not None
+        assert creds["username"] == test_user.username
+        assert creds["aud"] == JWT_AUDIENCE
+    
+    async def test_token_missing_user_is_invalid(self, app: FastAPI, client: AsyncClient) -> None:
+        access_token = auth_service.create_access_token_for_user(
+            user=None,
+            secret_key=str(SECRET_KEY),
+            audience=JWT_AUDIENCE,
+            expires_in=ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
+        with pytest.raises(jwt.PyJWTError):
+            jwt.decode(access_token, str(SECRET_KEY), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
+    
+    @pytest.mark.parametrize(
+        "secret_key, jwt_audience, exception"
+        (
+            ("wrong-secret", JWT_AUDIENCE, jwt.InvalidSignatureError),
+            (None, JWT_AUDIENCE, jwt.InvalidSignatureError),
+            (SECRET_KEY, "notcryptohelms:auth", jwt.InvalidAudienceError),
+            (SECRET_KEY, None, jwt.InvalidAudienceError)
+        )
+    )
+    async def test_invalid_token_content_raises_error(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_user: UserInDB,
+        secret_key: Union[str, Secret],
+        jwt_audience: str,
+        exception: Type[BaseException]
+    ) -> None:
+        with pytest.raises(exception):
+            access_token = auth_service.create_access_token_for_user(
+                user=test_user,
+                secret_key=str(secret_key),
+                audience=jwt_audience,
+                expires_in=ACCESS_TOKEN_EXPIRE_MINUTES
+            )
+
+            jwt.decode(access_token, str(SECRET_KEY), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
 
 
 class TestUserRoutes:
@@ -73,7 +155,7 @@ class TestUserRegistration:
         assert user_in_db.username = new_user["username"]
 
         # Check that user returned in response is the same as the one in the db
-        created_user = UserInDB(**res.json(), password="whatever", salt="1234").dict(exclude={"password", "salt"})
+        created_user = UserPublic(**res.json()).dict(exclude={"access_token"})
         assert created_user == user_in_db.dict(exclude={"password", "salt"})
     
     @pytest.mark.parametrize(
@@ -101,3 +183,29 @@ class TestUserRegistration:
 
         res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
         assert res.status_code = status_code
+    
+
+    async def test_users_saved_password_is_hashed_and_has_salt(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        db: Database
+    ) -> None:
+        user_repo = UsersRepository(db)
+        new_user = {"email": "iamyou@surprise.io", "username": "heythere", "password": "supgirl"}
+
+        # Send post request to client to ensure success
+        res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
+        assert res.status_code == HTTP_201_CREATED
+
+        # Ensure the password is hashed in the db and that
+        # it's verifiable with out auth service
+        user_in_db = await user_repo.get_user_by_email(email=new_user["email"])
+        assert user_in_db is not None
+        assert user_in_db.salt is not None and user_in_db.salt != "123"
+        assert user_in_db.password != new_user["password"]
+        assert auth_service.verify_password(
+            password=new_user["password"],
+            salt=user_in_db.salt,
+            hashed_pw=user_in_db.password
+        )

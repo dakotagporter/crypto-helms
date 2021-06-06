@@ -34,6 +34,8 @@ UserPublic:
         - DateTimeModelMixin
         - IDModelMixin
     - Does NOT include password and salt
+    - Let UserPublic hold an optional AccessToken allowing a user to
+      be returned along with their access token as soon as they've registered
 """
 # Std Library Imports
 from typing import Optional
@@ -42,6 +44,7 @@ from typing import Optional
 from pydantic import EmailStr, constr
 
 from app.models.core import DateTimeModelMixin, IDModelMixin, CoreModel
+from app.models.token import AccessToken
 
 
 class UserBase(CoreModel):
@@ -79,4 +82,4 @@ class UserInDB(IDModelMixin, DateTimeModelMixin, UserBase):
 
 
 class UserPublic(IDModelMixin, DateTimeModelMixin, UserBase):
-    pass
+    access_token = Optional[AccessToken]
