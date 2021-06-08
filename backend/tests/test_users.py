@@ -181,6 +181,7 @@ class TestUserRegistration:
         new_user = {"email": "nottaken@gmail.com", "username": "username_not_taken", "password": "anypassword"}
         new_user[attr] = value
 
+        # Send post request to client to ensure success
         res = await client.post(app.url_path_for("users:register-new-user"), json={"new_user": new_user})
         assert res.status_code = status_code
     
