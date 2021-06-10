@@ -67,6 +67,58 @@ from app.models.token import JWTMeta, JWTCreds, JWTPayload
 pytestmark = pytest.mark.asyncio
 
 
+class TestUserLogin:
+    async def test_user_can_login_successfully_and_receives_valid_token(
+        self, app: FastAPI, client: AsyncClient, test_user: UserInDB
+    ) -> None:
+        client.headers["content-type"] = "application/x-www-form-urlencoded"
+        login_data = {
+            "username": test_user.email,
+            "password": "somepassword"
+        }
+        res = await client.post(app.url_path_for("users:login-email-and-password"), data=login_data)
+        assert res.status_code == HTTP_200_OK
+
+        token = res.json().get("access_token")
+        creds = jwt.decode(token, str(SECRET_KEY), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
+        assert "username" in creds
+        assert creds["username"] == test_user.username
+        assert sub in creds
+        assert creds["sub"] == test_user.email
+        assert "token_type" in res.json()
+        assert res.json().get("token_type") == "bearer"
+    
+    @pytest.mark.parametrize(
+        "credential, wrong_value, status_code"
+        (
+            ("email", "wrong@email.com", 401),
+            ("email", None, 401),
+            ("email", "notanemail", 401),
+            ("password", "wrongpassword", 401)
+            ("password", None, 401)
+        )
+    )
+    async def test_user_with_wrong_creds_doesnt_receive_token(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_user: UserInDB,
+        credential: str,
+        wrong_value: str,
+        status_code: int
+    ) -> None:
+        client.headers["content-type"] = "application/x-www-from-urlencoded"
+        user_data = test_user.dict()
+        user_data["password"] = "somepassword"
+        user_data[credential] = wrong_value
+        login_data = {
+            "username": user_data["email"],
+            "password": user_data["password"]
+        }
+        res = await client.post(app.url_path_for("users:login-email-and-password"), data=login_data)
+        assert res.status_code == status_code
+        assert "access_token" not in res.json()
+
 class TestAuthTokens:
     async def test_can_create_access_token_successfully(
         self, app: FastAPI, client: AsyncClient, test_user: UserInDB
