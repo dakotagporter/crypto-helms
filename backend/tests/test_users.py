@@ -35,6 +35,15 @@ test_token_missing_user_is_invalid():
 test_invalid_token_content_raises_error():
     - Ensure that various other incorrect token contents raise the
       correct errors
+
+test_user_can_login_successfully_and_receives_valid_token():
+    - Assuming an access token is generated, we send login info to the
+      login route and receive a token back
+    - Ensure that everything matches
+
+test_user_with_wrong_creds_doesnt_receive_token():
+    - Create various false login datasets and ensure the correct
+      error codes are given back
 """
 # Std Library Imports
 from typing import List, Union, Type, Optional

@@ -17,6 +17,12 @@ register_new_user():
     - Run the query to create a new user by unpacking all of the UserCreate's
       attributes as the values to be inserted with the SQL query
     - Return the UserInDB object
+
+authenticate_user():
+    - Checks that user is in database
+    - Verify the users password with our auth service
+    - python-multipart used to retrieve the password from
+      the OAuth form
 """
 # Std Library Imports
 
@@ -54,6 +60,17 @@ class UsersRepository(BaseRepository):
         super().__init__(db)
         self.auth_service = auth_service
 
+    async def authenticate_user(self, *, email: EmailStr, password: str) -> Optional[UserInDB]:
+        # Check that user is in db
+        user = await self.get_user_by_email(email=email)
+        if not user:
+            return None
+        # Verify user password
+        if not self.auth_service.verify_password(password=password, salt=user.salt, hashed_pw=user.password):
+            return None
+        
+        return user
+        
     async def get_user_by_email(self, *, email: EmailStr) -> UserInDB:
         user_record = await self.db.fetch_one(query=GET_USER_BY_EMAIL, values={"email": email})
 
