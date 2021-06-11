@@ -20,13 +20,20 @@ create_access_token_for_user():
       the user with out JWTMeta and JWTCreds classes
     - All of those attributes are dumped into a JWTPayload object
     - The payload is the encoded with our algorithm and secret key
+
+get_username_from_token():
+    - Attempts to decode a token and raises an error if there is an issue
+    - Returns the username if successful
 """
 # Std Library Imports
 from datetime import datetime, timedelta
+from typing import Optional
 
 # Third Party Imports
 import jwt
 import bcrypt
+from pydantic import ValidationError
+from fastapi import HTTPException, status
 from passlib.context import CryptContext
 
 from app.models.user import UserPasswordUpdate
@@ -86,3 +93,16 @@ class AuthService:
         access_token = jwt.encode(token_payload.dict(), secret_key, algorithm=JWT_ALGORITHM)
 
         return access_token
+    
+    def get_username_from_token(self, *, token: str, secret_key: str) -> Optional[str]:
+        try:
+            decoded_token = jwt.decode(token, str(secret_key), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
+            payload = JWTPayload(**decoded_token)
+        except (jwt.PyJWTError, ValidationError):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate token credentials.",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        
+        return payload.username

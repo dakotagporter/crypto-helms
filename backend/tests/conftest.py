@@ -17,6 +17,11 @@ client():
 
 test_user():
     - Tests user existence
+
+authorized_client():
+    - In order to test authorized requests down the road, we need
+      to create a user who is appropriately authorized
+    - We will use this client instead for those tests
 """
 # Std Library Imports
 import os
@@ -31,7 +36,9 @@ from databases import Database
 import alembic
 from alembic.config import Config
 
+from app.services import auth_service
 from app.models.user import UserCreate, UserInDB
+from app.core.config import SECRET_KEY, JWT_TOKEN_PREFIX
 from app.db.repositories.users import UsersRepository
 
 
@@ -84,3 +91,15 @@ async def test_user(db: Database) -> UserInDB:
         return existing_user
     
     return await user_repo.register_new_user(new_user=new_user)
+
+# Create authorized client
+@pytest.fixture
+def authorized_client(client: AsyncClient, test_user: UserInDB) -> AsyncClient:
+    access_token = auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
+
+    client.headers = {
+        **client.headers,
+        "Authorization": f"{JWT_TOKEN_PREFIX} {access_token}"
+    }
+
+    return client

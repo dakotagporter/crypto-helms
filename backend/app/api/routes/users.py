@@ -44,6 +44,10 @@ from app.services import auth_service
 router = APIRouter()
 
 
+@router.get("/me/", response_model=UserPublic, name="users:get-current-user")
+async def get_currently_authenticated_user() -> None:
+    return None
+
 @router.post("/login/token/", response_model=AccessToken, name="users:login-email-and-password")
 async def user_login_with_email_and_password(
     user_repo: UsersRepository = Depends(get_repository(UsersRepository)),

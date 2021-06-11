@@ -44,6 +44,16 @@ test_user_can_login_successfully_and_receives_valid_token():
 test_user_with_wrong_creds_doesnt_receive_token():
     - Create various false login datasets and ensure the correct
       error codes are given back
+
+test_can_retrieve_username_from_token():
+    - Test that we can decode the token and that usernames match
+
+test_error_when_secret_or_token_is_wrong():
+    - Ensure we get appropriate errors when secret key or token is invalid
+
+TestUserMe:
+    - Test the protected route we created for authenticated user to be
+      able to access their own information
 """
 # Std Library Imports
 from typing import List, Union, Type, Optional
@@ -52,7 +62,7 @@ from typing import List, Union, Type, Optional
 import jwt
 import pytest
 from httpx import AsyncClient
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from databases import Database
 from pydantic import ValidationError
 from starlette.datastructures import Secret
@@ -74,6 +84,34 @@ from app.models.token import JWTMeta, JWTCreds, JWTPayload
 
 
 pytestmark = pytest.mark.asyncio
+
+
+class TestUserMe:
+    async def test_authenticated_user_can_retrieve_own_data(
+        self, app: FastAPI, authorized_client: AsyncClient, test_user: UserInDB
+    ) -> None:
+        res = await authorized_client.get(app.url_path_for("users:get-current-user"))
+        assert res.status_code == HTTP_200_OK
+        user = UserPublic(**res.json())
+        assert user.email == test_user.email
+        assert user.username == test_user.username
+        assert user.id == test_user.id
+    
+    async def test_user_cannot_access_own_data_if_not_authenticated(
+        self, app: FastAPI, client: AsyncClient, test_user=UserInDB
+    ) -> None:
+        res = await client.get(app.url_path_for("users:get-current-user"))
+        assert res.status_code == HTTP_401_UNAUTHORIZED
+    
+    @pytest.mark.parametrize("jwt_prefix", (("",), ("value",), ("Token",), ("JWT",), ("Swearer",),))
+    async def test_user_cannot_access_own_data_with_incorrect_jwt_prefix(
+        self, app: FastAPI, client: AsyncClient, test_user: UserInDB, jwt_prefix: str
+    ) -> None:
+        token = self.auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
+        res = await client.get(
+            app.url_path_for("users:get-current-user"), headers={"Authorization": f"{jwt_prefix} {token}"}
+        )
+        assert res.status_code == HTTP_401_UNAUTHORIZED
 
 
 class TestUserLogin:
@@ -182,6 +220,38 @@ class TestAuthTokens:
             )
 
             jwt.decode(access_token, str(SECRET_KEY), audience=JWT_AUDIENCE, algorithms=[JWT_ALGORITHM])
+    
+    async def test_can_retrieve_username_from_token(
+        self, app: FastAPI, client: AsyncClient, test_user: UserInDB
+    ) -> None:
+        token = auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
+        username = auth_service.get_username_from_token(token=token, secret_key=str(SECRET_KEY))
+        assert username == test_user.username
+
+    @pytest.mark.parametrize(
+        "secret, wrong_token",
+        (
+            (SECRET_KEY, "asdf"),
+            (SECRET_KEY, ""),
+            (SECRET_KEY, None),
+            ("asdf", "correct_token")
+        )
+    )
+    async def test_error_when_secret_or_token_is_wrong(
+        self,
+        app: FastAPI,
+        client: AsyncClient,
+        test_user: UserInDB,
+        secret: Union[Secret, str],
+        wrong_token: Optional[str]
+    ) -> None:
+        token = auth_service.create_access_token_for_user(user=test_user, secret_key=str(SECRET_KEY))
+
+        if wrong_token == "correct_token":
+            wrong_token = token
+        
+        with pytest.raises(HTTPException):
+            username = auth_service.get_username_from_token(token=token, secret_key=str(secret))
 
 
 class TestUserRoutes:
