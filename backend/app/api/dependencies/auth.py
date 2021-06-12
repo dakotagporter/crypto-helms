@@ -1,5 +1,15 @@
 """
+oauth2_scheme:
+    - Informs FastAPI the url provided is where to receive a token
 
+get_user_from_token():
+    - Depends on retrieval of a token using FastAPI's OAuth2PasswordBearer
+    - Decodes the token and matches it with a user in the database
+    - Returns the user
+
+get_current_active_user():
+    - Uses user returned from get_user_from_token and ensures they
+      exist and are active
 """
 # Std Library Imports
 from typing import Optional
@@ -20,7 +30,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{API_PREFIX}/users/login/token/"
 
 async def get_user_from_token(
     *,
-    token: str = Depends(oauth2_scheme),
+    token: str = Depends(oauth2_scheme), # Inspects for Authorization header (Bearer + token)
     user_repo: UsersRepository = Depends(get_repository(UsersRepository))
 ) -> Optional[UserInDB]:
     try:

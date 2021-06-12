@@ -34,8 +34,9 @@ from starlette.status import (
   HTTP_422_UNPROCESSABLE_ENTITY
 )
 
+from app.api.dependencies.auth import get_current_active_user
 from app.api.dependencies.database import get_repository
-from app.models.user import UserCreate, UserPublic
+from app.models.user import UserCreate, UserPublic, UserInDB, UserUpdate
 from app.db.repositories.users import UsersRepository
 from app.models.token import AccessToken
 from app.services import auth_service
@@ -45,8 +46,8 @@ router = APIRouter()
 
 
 @router.get("/me/", response_model=UserPublic, name="users:get-current-user")
-async def get_currently_authenticated_user() -> None:
-    return None
+async def get_currently_authenticated_user(current_user: UserInDB = Depends(get_current_active_user)) -> UserPublic:
+    return current_user
 
 @router.post("/login/token/", response_model=AccessToken, name="users:login-email-and-password")
 async def user_login_with_email_and_password(
